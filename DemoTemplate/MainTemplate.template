@@ -76,8 +76,7 @@
           "SSHLocation" : { "Ref" : "SSHLocation" },
           "HostKeys" : { "Ref" : "HostKeys" },
           "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
-          "NodeName" : "percona_node1",
-          "AttrFile" : "attribs_master.json"
+          "NodeName" : "percona_node1",          
         }
       }
     },
@@ -97,34 +96,11 @@
           "SSHLocation" : { "Ref" : "SSHLocation" },
           "HostKeys" : { "Ref" : "HostKeys" },
           "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
-          "NodeName" : "percona_node2",
-          "AttrFile" : "attribs_slave.json"
+          "NodeName" : "percona_node2"          
         }
       }
     },
-
-    "NodeInstance3" : {
-      "Type" : "AWS::CloudFormation::Stack",
-      "Metadata" : {
-        "Comment" : "Create ChefNode"
-      },
-      "DependsOn" : "NodeInstance",
-      "Properties" : {
-        "TemplateURL" : "https://s3.amazonaws.com/oleksandr-vorobiov-storage/templates/Node.template",
-        "Parameters" : {
-          "ChefServerUrl" : { "Fn::GetAtt" : [ "ChefServerInstance", "Outputs.ChefServerURL"]},
-          "KeyName" : { "Ref" : "KeyName" },
-          "InstanceType" : { "Ref" : "InstanceType" },
-          "SSHLocation" : { "Ref" : "SSHLocation" },
-          "HostKeys" : { "Ref" : "HostKeys" },
-          "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
-          "NodeName" : "percona_node3",
-          "AttrFile" : "attribs_slave.json"
-        }
-      }
-    }  
   },
-
  "Outputs": {
 
   } 

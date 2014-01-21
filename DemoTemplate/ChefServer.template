@@ -141,10 +141,7 @@
           "for i in `/bin/ls /etc/chef/cookbooks/*.tar.gz`; do /bin/tar zxf $i -C /etc/chef/cookbooks/; /bin/rm -f $i; done\n",
           "for i in `/bin/ls /etc/chef/cookbooks`; do /usr/bin/knife cookbook upload $i; done\n",          
           "/usr/bin/knife role from file /etc/chef/roles/*\n",          
-          "/bin/echo -e \"*/5 * * * * root /usr/bin/knife exec -E 'nodes.find(\\\"NOT role:BaseRole\\\") { |n| n.run_list.add(\\\"role[BaseRole]\\\"); n.save}' -c '/root/.chef/knife.rb'\" >> /etc/crontab\n",
-          "/bin/echo -e \"*/5 * * * * root /usr/bin/knife exec -E 'nodes.find(\\\"cluster_role:master AND role:BaseRole AND NOT role:PerconaMaster\\\") { |n| n.run_list.add(\\\"role[PerconaMaster]\\\"); n.save}' -c '/root/.chef/knife.rb'\" >> /etc/crontab\n",
-          "/bin/echo -e \"*/5 * * * * root /usr/bin/knife exec -E 'nodes.find(\\\"cluster_role:slave AND role:BaseRole AND NOT role:PerconaSlave\\\") { |n| n.run_list.add(\\\"role[PerconaSlave]\\\"); n.save}' -c '/root/.chef/knife.rb'\" >> /etc/crontab\n",
-                    
+          "/bin/echo -e \"*/5 * * * * root /usr/bin/knife exec -E 'nodes.find(\\\"NOT role:BaseRole\\\") { |n| n.run_list.add(\\\"role[BaseRole]\\\"); n.save}' -c '/root/.chef/knife.rb'\" >> /etc/crontab\n",                    
 
           "# All is well so signal success\n",
           "/opt/aws/bin/cfn-signal -e 0 -r \"ChefServer setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"

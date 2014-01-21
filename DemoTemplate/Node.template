@@ -23,11 +23,6 @@
       "Type" : "String"
     },
 
-    "AttrFile" : {
-      "Description" : "File with attributes",
-      "Type" : "String"
-    },
-
     "SecretAccessKey" : {
       "Description" : "Secret access key",
       "Type" : "String"
@@ -129,8 +124,7 @@
           "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/admin.pem /root/chef-repo/.chef\n",
           "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/chef-validator.pem /root/chef-repo/.chef\n",
           "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/knife.rb /root/chef-repo/.chef\n",
-          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/client.rb /etc/chef\n",
-          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/", { "Ref" : "AttrFile" }," /etc/chef/attribs.json\n",
+          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/client.rb /etc/chef\n",          
           "/bin/cp -p /root/chef-repo/.chef/chef-validator.pem /etc/chef/validation.pem\n",
           
           "/bin/echo '\nchef_server_url \"", { "Ref" : "ChefServerUrl" }, "\"' >> /etc/chef/client.rb\n",
