@@ -1,0 +1,169 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "AWS CloudFormation Template which creates Percona node.",
+
+  "Parameters" : {
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "HostKeys" : {
+      "Description" : "Host Key",
+      "Type" : "String"
+    },
+
+    "NodeName" : {
+      "Description" : "Node Name",
+      "Type" : "String"
+    },
+
+    "AttrFile" : {
+      "Description" : "File with attributes",
+      "Type" : "String"
+    },
+
+    "SecretAccessKey" : {
+      "Description" : "Secret access key",
+      "Type" : "String"
+    },
+
+    "ChefServerUrl" : {
+      "Description" : "Chef Server URL resource",
+      "Type" : "String"
+    },
+
+    "InstanceType" : {
+      "Description" : "ChefServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "m1.small",
+      "AllowedValues" : [ "t1.micro","m1.small"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "SSHLocation" : {
+      "Description" : " The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    } 
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "64" },
+      "m1.small"    : { "Arch" : "64" }      
+    },
+    
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : { "32" : "ami-d7a18dbe", "64" : "ami-bba18dd2", "64HVM" : "ami-0da96764" },
+      "us-west-2"      : { "32" : "ami-def297ee", "64" : "ami-ccf297fc", "64HVM" : "NOT_YET_SUPPORTED" },
+      "us-west-1"      : { "32" : "ami-923909d7", "64" : "ami-a43909e1", "64HVM" : "NOT_YET_SUPPORTED" }
+    }
+  },
+
+  "Resources" : {
+
+    "NodeInstance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Metadata" : {
+        "Description" : "Bootstrap ChefNode",
+
+        "AWS::CloudFormation::Init" : {
+          "config" : {
+            "packages" : {
+              "yum" : {
+                "wget"  : [],
+                "git"  : []
+              }
+            }
+          }
+        }
+      },
+
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region"}, { "Fn::FindInMap" : [ "AWSInstanceType2Arch" , { "Ref" : "InstanceType" }, "Arch" ] } ] },
+        "InstanceType"   : { "Ref" : "InstanceType" },
+        "KeyName"        : { "Ref" : "KeyName" },
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash -v\n",
+
+          "yum update -y aws-cfn-bootstrap\n",
+
+          "# Helper function\n",
+          "function error_exit\n",
+          "{\n",
+          "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", {"Ref" : "WaitHandle" }, "'\n",
+          "  exit 1\n",
+          "}\n",
+
+          "yum update -y\n",
+          "yum install git -y\n",
+          "/sbin/service iptables stop\n",
+          "/sbin/service ip6tables stop\n",
+          "/sbin/chkconfig iptables off\n",
+          "/sbin/chkconfig ip6tables off\n",
+
+          "Install Chef Client package \n",
+
+          "/usr/bin/curl -L https://www.opscode.com/chef/install.sh | bash\n",
+          "cd /root\n",
+          "/usr/bin/git git://github.com/opscode/chef-repo.git\n",
+          "/bin/mkdir -p /root/chef-repo/.chef\n",
+          "/bin/mkdir -p /etc/chef\n",
+          "/bin/mkdir /root/.aws\n",
+          "/bin/touch /root/.aws/config\n",
+          "/bin/echo '[default]' >> /root/.aws/config\n",
+          "/bin/echo 'region = ",  {"Ref" : "AWS::Region" }, "' >> /root/.aws/config\n",
+          "/bin/echo 'aws_access_key_id = ", { "Ref" : "HostKeys" }, "' >> /root/.aws/config\n",
+          "/bin/echo 'aws_secret_access_key = ", { "Ref" : "SecretAccessKey" }, "' >> /root/.aws/config\n",
+
+          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/admin.pem /root/chef-repo/.chef\n",
+          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/chef-validator.pem /root/chef-repo/.chef\n",
+          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/knife.rb /root/chef-repo/.chef\n",
+          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/client.rb /etc/chef\n",
+          "/usr/bin/aws s3 cp s3://oleksandr-vorobiov-storage/", { "Ref" : "AttrFile" }," /etc/chef/attribs.json\n",
+          "/bin/cp -p /root/chef-repo/.chef/chef-validator.pem /etc/chef/validation.pem\n",
+          
+          "/bin/echo '\nchef_server_url \"", { "Ref" : "ChefServerUrl" }, "\"' >> /etc/chef/client.rb\n",
+          "/bin/echo 'node_name \"", { "Ref" : "NodeName" },"\"' >> /etc/chef/client.rb\n",
+          "/bin/echo '\nchef_server_url \"", { "Ref" : "ChefServerUrl" }, "\"' >> /root/chef-repo/.chef/knife.rb\n",
+          "/usr/bin/chef-client\n",
+          
+          "/bin/echo -e \"*/5 * * * * root /usr/bin/chef-client\" >> /etc/crontab\n",
+
+          "# All is well so signal success\n",
+          "/opt/aws/bin/cfn-signal -e 0 -r \"NodeInstance setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
+        ]]}}
+      }
+    },
+
+    "WaitHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+
+    "WaitCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "NodeInstance",
+      "Properties" : {
+        "Handle" : {"Ref" : "WaitHandle"},
+        "Timeout" : "1200"
+      }
+    }
+  },
+
+  "Outputs" : {
+    "NodeURL" : {
+      "Value" : { "Fn::Join" : ["", ["https://", { "Fn::GetAtt" : [ "NodeInstance", "PublicDnsName" ]}, ""]] },
+      "Description" : "NodeInstance"
+    }
+  }
+}

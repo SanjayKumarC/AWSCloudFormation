@@ -1,0 +1,132 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "Creates Amazon cloud with Percona cluster.",
+
+  "Parameters" : {
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "Default": "ec2-alecv",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "HostKeys" : {
+      "Description" : "Host Key",
+      "Type" : "String"
+    },
+
+    "SecretAccessKey" : {
+      "Description" : "Secret access key",
+      "Type" : "String"
+    },
+
+    "InstanceType" : {
+      "Description" : "ChefServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "m1.small",
+      "AllowedValues" : [ "t1.micro","m1.small"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "SSHLocation" : {
+      "Description" : " The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    } 
+  },
+
+  "Resources" : {
+    "ChefServerInstance" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Create ChefServer"
+      },
+      "Properties" : {
+        "TemplateURL" : "https://s3.amazonaws.com/oleksandr-vorobiov-storage/templates/ChefServer.template",
+        "Parameters" : {
+          "KeyName" : { "Ref" : "KeyName" },
+          "HostKeys" : { "Ref" : "HostKeys" },
+          "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
+          "InstanceType" : { "Ref" : "InstanceType" },
+          "SSHLocation" : { "Ref" : "SSHLocation" }
+        }
+      }
+    },
+
+    "NodeInstance" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Create ChefNode"
+      },
+      "Properties" : {
+        "TemplateURL" : "https://s3.amazonaws.com/oleksandr-vorobiov-storage/templates/Node.template",
+        "Parameters" : {
+          "ChefServerUrl" : { "Fn::GetAtt" : [ "ChefServerInstance", "Outputs.ChefServerURL"]},
+          "KeyName" : { "Ref" : "KeyName" },
+          "InstanceType" : { "Ref" : "InstanceType" },
+          "SSHLocation" : { "Ref" : "SSHLocation" },
+          "HostKeys" : { "Ref" : "HostKeys" },
+          "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
+          "NodeName" : "percona_node1",
+          "AttrFile" : "attribs_master.json"
+        }
+      }
+    },
+
+    "NodeInstance2" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Create ChefNode"
+      },
+      "DependsOn" : "NodeInstance",
+      "Properties" : {
+        "TemplateURL" : "https://s3.amazonaws.com/oleksandr-vorobiov-storage/templates/Node.template",
+        "Parameters" : {
+          "ChefServerUrl" : { "Fn::GetAtt" : [ "ChefServerInstance", "Outputs.ChefServerURL"]},
+          "KeyName" : { "Ref" : "KeyName" },
+          "InstanceType" : { "Ref" : "InstanceType" },
+          "SSHLocation" : { "Ref" : "SSHLocation" },
+          "HostKeys" : { "Ref" : "HostKeys" },
+          "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
+          "NodeName" : "percona_node2",
+          "AttrFile" : "attribs_slave.json"
+        }
+      }
+    },
+
+    "NodeInstance3" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Create ChefNode"
+      },
+      "DependsOn" : "NodeInstance",
+      "Properties" : {
+        "TemplateURL" : "https://s3.amazonaws.com/oleksandr-vorobiov-storage/templates/Node.template",
+        "Parameters" : {
+          "ChefServerUrl" : { "Fn::GetAtt" : [ "ChefServerInstance", "Outputs.ChefServerURL"]},
+          "KeyName" : { "Ref" : "KeyName" },
+          "InstanceType" : { "Ref" : "InstanceType" },
+          "SSHLocation" : { "Ref" : "SSHLocation" },
+          "HostKeys" : { "Ref" : "HostKeys" },
+          "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
+          "NodeName" : "percona_node3",
+          "AttrFile" : "attribs_slave.json"
+        }
+      }
+    }  
+  },
+
+ "Outputs": {
+
+  } 
+
+}
