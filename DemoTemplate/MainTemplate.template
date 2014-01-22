@@ -76,7 +76,7 @@
           "SSHLocation" : { "Ref" : "SSHLocation" },
           "HostKeys" : { "Ref" : "HostKeys" },
           "SecretAccessKey" : { "Ref" : "SecretAccessKey" },
-          "NodeName" : "percona_node1",          
+          "NodeName" : "percona_node1"         
         }
       }
     },
@@ -99,8 +99,9 @@
           "NodeName" : "percona_node2"          
         }
       }
-    },
+    }
   },
+
  "Outputs": {
 
   } 
